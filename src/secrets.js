@@ -3,6 +3,18 @@ const aesjs = require('aes-js')
 
 const secrets = {}
 
+secrets.constructCoinAddress = ({ coinSymbol, address, description }) => {
+  const now = new Date()
+  return [{
+    coinSymbol,
+    address,
+    description,
+  }, {
+    createdDateTime: now.toUTCString(),
+    modifiedDateTime: now.toUTCString(),
+  }]
+}
+
 secrets.constructLogin = ({ username, password, uri }) => {
   const now = new Date()
   return [{

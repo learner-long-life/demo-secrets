@@ -1,5 +1,5 @@
 'use strict'
-// Client tests for server REST interface
+// Client to save a new crypto address
 
 const pbkdf2 = require('pbkdf2')
 const randombytes = require('randombytes')
@@ -14,9 +14,9 @@ const LOGGER = new Logger('client')
 
 const rdb = new RemoteDB('localhost', 7000, false)
 
-const uri = process.argv[2]
-const username = process.argv[3]
-const password = process.argv[4] || secrets.generatePassword(secrets.bankOfAmericaConfig)
+const coinSymbol = process.argv[2]
+const address = process.argv[3]
+const description = process.argv[4]
 
 const main = async () => {
   await secrets.init()
@@ -38,10 +38,10 @@ const main = async () => {
   LOGGER.debug('Salt (to be saved):', salt.toString('hex'))
   LOGGER.debug('Derived Key:', derivedKey.toString('hex'))
 
-  const login = secrets.constructLogin({ username, password, uri })
-  LOGGER.info('URI: ' + uri)
-  LOGGER.info('username: ' + username)
-  LOGGER.info('password: ' + password)
+  const login = secrets.constructCoinAddress({ coinSymbol, address, description })
+  LOGGER.info('Coin: ' + coinSymbol)
+  LOGGER.info('Address: ' + address)
+  LOGGER.info('Description: ' + description)
   const encryptedHexString = secrets.encryptJSON({ jsonObj: login[0], key: derivedKey })
 
   const secretIdBuffer = secrets.computeSecretId(encryptedHexString)

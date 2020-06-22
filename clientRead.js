@@ -4,14 +4,18 @@
 const pbkdf2 = require('pbkdf2')
 const randombytes = require('randombytes')
 const { RemoteDB } = require('demo-client')
-const { getImmutableKey } = require('demo-utils')
+const { Logger, getImmutableKey } = require('demo-utils')
 const secrets = require('.')
 const { assert } = require('chai')
 const secp256k1 = require('secp256k1')
 const { toJS } = require('demo-utils')
-const { Map } = require('immutable')
+const { Map, List } = require('immutable')
+const LOGGER = new Logger('clientRead')
 
 const rdb = new RemoteDB('localhost', 7000, false)
+
+const query = process.argv[2]
+LOGGER.info('Query', query)
 
 const main = async () => {
   await secrets.init()
@@ -29,21 +33,32 @@ const main = async () => {
 
   const secretIds = getImmutableKey(`salts`, Map({}))
 
-  secretIds.map(async (obj, secretId, i) => {
+  const results = await Promise.all(List(secretIds.map(async (obj, secretId, i) => {
     const salt = obj.get('salt')
-    console.log(`Reading salt ${salt} for secret ID ${secretId}`)
+    LOGGER.debug(`Reading salt ${salt} for secret ID ${secretId}`)
     const derivedKey = secrets.constructDerivedKey({ salt: Buffer.from(salt, 'hex'), keyLength: 32 })
-    console.log('Salt (recovered):', salt)
-    console.log('Derived Key (recovered):', derivedKey.toString('hex'))
+    LOGGER.debug('Salt (recovered):', salt)
+    LOGGER.debug('Derived Key (recovered):', derivedKey.toString('hex'))
 
     const secretSig = secrets.signWithPrivateKey(Buffer.from(secretId, 'hex')).toString('hex')
-    console.log('Secret ID', secretId)
-    console.log('Secret Sig', secretSig)
     const response4 = await rdb.getHTTP(`/api/secrets/${secretId}/${secretSig}/${publicKey}`)
     const encryptedHexString = JSON.parse(response4)['encryptedHexString']
-    console.log('Retrieved Hex String', encryptedHexString)
+    LOGGER.debug('Secret ID', secretId)
+    LOGGER.debug('Secret Sig', secretSig)
+    LOGGER.debug('Retrieved Hex String', encryptedHexString)
+    if (!encryptedHexString) {
+      LOGGER.error('Null encrypted hex string for secret ID ', secretId)
+      return null
+    }
     const decryptedObj = JSON.parse(secrets.decryptHexString({ encryptedHexString, key: derivedKey }))
-    console.log('Decrypted JSON Object', JSON.stringify(decryptedObj))
+    LOGGER.debug('URI', decryptedObj['uri'])
+    return decryptedObj
+  }).values()).toJS())
+
+  results.filter((obj, secretId, i) => {
+    return obj && obj['uri'] && (obj['uri'].indexOf(query) !== -1)
+  }).forEach((obj, secretId) => {
+    console.log(JSON.stringify(obj, null, 2))
   })
 }
 

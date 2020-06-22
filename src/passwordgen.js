@@ -1,10 +1,14 @@
 'use strict'
 
-var strongPaswordGenerator = require("strong-password-generator");
-var defaultPasswordConfig = {
+const { Map } = require('immutable')
+const strongPaswordGenerator = require("strong-password-generator");
+
+const gens = {}
+
+gens.defaultPasswordConfig = {
   base: 'WORD',
   length: {
-    min: 12,
+    min: 8,
     max: 16
   },
   capsLetters: {
@@ -27,9 +31,16 @@ var defaultPasswordConfig = {
   }
 };
 
-module.exports = {
-  generatePassword: () => {
-    const password = strongPaswordGenerator.generatePassword(defaultPasswordConfig);
-    return password
-  }
-} 
+gens.bankOfAmericaConfig = Map(gens.defaultPasswordConfig)
+  .set('spacialCharactors', {
+    includes: ['@', '#', '*', '(', ')', '+', '=', '{', '}', '/', '?', '~', ';', ',', '.', '-', '_'],
+    min: 2,
+    max: 4
+  }).toJS()
+
+gens.generatePassword = (config=gens.defaultPasswordConfig) => {
+  const password = strongPaswordGenerator.generatePassword(config);
+  return password
+}
+
+module.exports = gens
