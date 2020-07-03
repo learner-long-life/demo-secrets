@@ -56,7 +56,8 @@ const main = async () => {
   }).values()).toJS())
 
   results.filter((obj, secretId, i) => {
-    return obj && obj['uri'] && (obj['uri'].indexOf(query) !== -1)
+    return obj && ((obj['uri'] && (obj['uri'].indexOf(query) !== -1)) ||
+                   (obj['description'] && (obj['description'].toLowerCase().indexOf(query) !== -1)))
   }).forEach((obj, secretId) => {
     console.log(JSON.stringify(obj, null, 2))
   })

@@ -3,6 +3,29 @@ const aesjs = require('aes-js')
 
 const secrets = {}
 
+secrets.constructGenericSecret = ({ description, genericSecret }) => {
+  const now = new Date()
+  return [{
+    description,
+    genericSecret,
+  }, {
+    createdDateTime: now.toUTCString(),
+    modifiedDateTime: now.toUTCString(),
+  }]
+}
+
+secrets.constructApiSecret = ({ uri, projectId, apiSecret }) => {
+  const now = new Date()
+  return [{
+    uri,
+    projectId,
+    apiSecret,
+  }, {
+    createdDateTime: now.toUTCString(),
+    modifiedDateTime: now.toUTCString(),
+  }]
+}
+
 secrets.constructCoinAddress = ({ coinSymbol, address, description }) => {
   const now = new Date()
   return [{
