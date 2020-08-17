@@ -42,8 +42,9 @@ const main = async () => {
 
     const secretSig = secrets.signWithPrivateKey(Buffer.from(secretId, 'hex')).toString('hex')
     const response4 = await rdb.getHTTP(`/api/secrets/${secretId}/${secretSig}/${publicKey}`)
-    const encryptedHexString = JSON.parse(response4)['encryptedHexString']
-    LOGGER.debug('Secret ID', secretId)
+    const retrievedObj = JSON.parse(response4)
+    const encryptedHexString = retrievedObj['encryptedHexString']
+    LOGGER.debug('Retrieved Object', JSON.stringify(retrievedObj))
     LOGGER.debug('Secret Sig', secretSig)
     LOGGER.debug('Retrieved Hex String', encryptedHexString)
     if (!encryptedHexString) {
@@ -52,13 +53,21 @@ const main = async () => {
     }
     const decryptedObj = JSON.parse(secrets.decryptHexString({ encryptedHexString, key: derivedKey }))
     LOGGER.debug('URI', decryptedObj['uri'])
+    decryptedObj['originalObj'] = retrievedObj
+    decryptedObj['secretId'] = secretId
+    for (let key in retrievedObj) {
+      if (!decryptedObj[key]) {
+        decryptedObj[key] = retrievedObj[key]
+      }
+    }
     return decryptedObj
   }).values()).toJS())
 
   results.filter((obj, secretId, i) => {
     return obj && ((obj['uri'] && (obj['uri'].indexOf(query) !== -1)) ||
                    (obj['description'] && (obj['description'].toLowerCase().indexOf(query) !== -1)))
-  }).forEach((obj, secretId) => {
+  }).forEach((obj, i, secretId) => {
+    console.log('Secret ID', secretId)
     console.log(JSON.stringify(obj, null, 2))
   })
 }
